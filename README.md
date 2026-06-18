@@ -1,5 +1,7 @@
 # Eniac
 
+Full form: `Easier Navigation In AI Chats`
+
 AI chat app with:
 
 - multiple root chats
