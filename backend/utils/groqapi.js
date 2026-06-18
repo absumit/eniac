@@ -1,27 +1,46 @@
-import Groq from "groq-sdk"
-import "dotenv/config"
+import "dotenv/config";
+import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-let convs = [];
+function sanitizeMessages(messages) {
+  if (!Array.isArray(messages)) {
+    return [];
+  }
 
-export async function chatwithgroq(query) {
-  const userMessage = {
-    role: "user",
-    content: query,
-  };
+  return messages
+    .filter((message) => {
+      return (
+        typeof message?.role === "string" &&
+        typeof message?.content === "string" &&
+        message.content.trim().length > 0
+      );
+    })
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+}
 
-  convs.push(userMessage);
+export async function chatwithgroq(input) {
+  const messages = Array.isArray(input)
+    ? sanitizeMessages(input)
+    : sanitizeMessages([
+        {
+          role: "user",
+          content: input || "hi",
+        },
+      ]);
 
-  const chatCompletion = await getGroqChatCompletion(convs);
-  const reply = chatCompletion.choices[0]?.message?.content || "";
+  if (messages.length === 0) {
+    messages.push({
+      role: "user",
+      content: "hi",
+    });
+  }
 
-  convs.push({
-    role: "assistant",
-    content: reply,
-  });
-
-  return reply;
+  const chatCompletion = await getGroqChatCompletion(messages);
+  return chatCompletion.choices[0]?.message?.content || "";
 }
 
 export async function getGroqChatCompletion(messages) {
@@ -35,7 +54,8 @@ export async function getGroqChatCompletion(messages) {
     ],
     model: "openai/gpt-oss-20b",
     temperature: 0.7,
+    max_tokens: 512,
   });
 }
 
-export default {getGroqChatCompletion,chatwithgroq};
+export default { getGroqChatCompletion, chatwithgroq };
